@@ -28,8 +28,15 @@ import (
 var outputformat = "json"
 var awsconfigfile = "~/.aws/credentials"
 var sslverification = true
-var idpentryurl = ""          // SAML Identity URL
-var idpauthformsubmiturl = "" // Form POST Url
+
+// SAML Identity URL
+var idpentryurl = ""
+
+// Form POST Url
+var idpauthformsubmiturl = ""
+
+// Set Company proxy
+var httpProxy = ""
 
 func main() {
 	soup.Header("User-Agent", `Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0","Accept-Encoding": "gzip, deflate, sdch`)
@@ -39,6 +46,10 @@ func main() {
 	//fmt.Printf("Username: %s, Password: %s\n", username, password)
 	fmt.Println()
 	fmt.Println("Please wait while we log you in.......")
+
+	proxy := fmt.Sprintf(httpProxy, username, password)
+	//fmt.Printf("Proxy %s\n", proxy)
+	os.Setenv("https_proxy", proxy)
 
 	data := url.Values{}
 	data.Set("username", username)
