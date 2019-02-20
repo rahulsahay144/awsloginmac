@@ -232,7 +232,12 @@ func main() {
 	fmt.Println()
 
 	// Test Credentials
-	svc = sts.New(session.New())
+	sess = session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+		Profile:           "saml",
+	}))
+
+	svc = sts.New(sess)
 
 	//svc = sts.New(sess, &aws.Config{Credentials: *token.Credentials})
 
