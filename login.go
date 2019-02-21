@@ -51,6 +51,7 @@ func main() {
 	//fmt.Printf("Proxy %s\n", proxy)
 	os.Setenv("https_proxy", proxy)
 
+	// Setup Authentication
 	data := url.Values{}
 	data.Set("username", username)
 	data.Add("password", password)
@@ -63,6 +64,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Get SAML Assertion
 	response, err = soup.Get(idpentryurl)
 	//fmt.Printf("%s\n", response)
 	if err != nil {
@@ -75,7 +77,6 @@ func main() {
 	inputs := doc.FindAll("input")
 	for _, input := range inputs {
 		//fmt.Println(input.Attrs()["name"], "| Name :", input.Attrs()["value"])
-
 		if input.Attrs()["name"] == "SAMLResponse" {
 			assertion = input.Attrs()["value"]
 		}
@@ -83,7 +84,6 @@ func main() {
 
 	//fmt.Println("SAMLResponse :", assertion)
 	//fmt.Println()
-
 	if assertion == "" {
 		fmt.Printf("-----------------------------------------------------")
 		fmt.Printf("Error page from WebSEAL")
@@ -117,7 +117,7 @@ func main() {
 		i++
 	}
 
-	fmt.Println("Please choose the role you would like to assume:")
+	fmt.Println("Please choose the role you would like to assume: ")
 	fmt.Println()
 
 	for key, value := range awsRoleMap {
@@ -135,6 +135,7 @@ func main() {
 	roleArn := strings.Split(awsRoleMap[selectedroleindex], ",")[1]
 	principalArn := strings.Split(awsRoleMap[selectedroleindex], ",")[0]
 
+	fmt.Println()
 	fmt.Println("Selected RoleArn : ", roleArn)
 	fmt.Println("Selected PrincipalArn : ", principalArn)
 
@@ -160,7 +161,7 @@ func main() {
 
 	fmt.Println()
 	fmt.Println()
-	fmt.Println("============")
+	fmt.Println("============ Use these to configure temporary environment variables ============")
 	fmt.Printf("export AWS_ACCESS_KEY_ID=\"%s\"\n", *token.Credentials.AccessKeyId)
 	fmt.Printf("export AWS_SECRET_ACCESS_KEY=\"%s\"\n", *token.Credentials.SecretAccessKey)
 	fmt.Printf("export AWS_SESSION_TOKEN=\"%s\"\n", *token.Credentials.SessionToken)
@@ -205,15 +206,15 @@ func main() {
 		section.SetValueFor("aws_session_token", *token.Credentials.SessionToken)
 
 		// delete option
-		// oldValue = section.Delete("DefaultOperationRedoProblemAction")
-		// fmt.Println("Deleted DefaultOperationRedoProblemAction: " + oldValue)
+		// oldValue = section.Delete("test")
+		// fmt.Println("Deleted test: " + oldValue)
 
 		// // add new options
-		// section.Add("innodb_buffer_pool_size", "64G")
-		// section.Add("innodb_buffer_pool_instances", "8")
+		// section.Add("test_param", "64G")
+		// section.Add("test_param2", "8")
 	}
 
-	// save the new config. the original will be renamed to /etc/config.ini.bak
+	// save the new config. the original will be renamed to credentials.bak
 	err = configparser.Save(config, filename)
 	if err != nil {
 		log.Fatal(err)
@@ -238,9 +239,6 @@ func main() {
 	}))
 
 	svc = sts.New(sess)
-
-	//svc = sts.New(sess, &aws.Config{Credentials: *token.Credentials})
-
 	input := &sts.GetCallerIdentityInput{}
 
 	result, err := svc.GetCallerIdentity(input)
@@ -261,6 +259,7 @@ func main() {
 	fmt.Println(result)
 }
 
+// expand - append the User home direcroty
 func expand(path string) (string, error) {
 	if len(path) == 0 || path[0] != '~' {
 		return path, nil
@@ -270,9 +269,11 @@ func expand(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return filepath.Join(usr.HomeDir, path[1:]), nil
 }
 
+//getUserCredentials from CLI
 func getUserCredentials() (string, string) {
 	reader := bufio.NewReader(os.Stdin)
 
