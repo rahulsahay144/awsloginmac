@@ -10,10 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/alyu/configparser"
 	"github.com/antchfx/xmlquery"
 	"github.com/rahulsahay144/soup"
+	"github.com/spf13/viper"
 
 	b64 "encoding/base64"
 
@@ -39,6 +41,23 @@ var idpauthformsubmiturl = ""
 var httpProxy = ""
 
 func main() {
+	// Get Environment Variables
+	v1, err := readConfig(".env", map[string]interface{}{})
+	if err != nil {
+		panic(fmt.Errorf("Error when reading config: %v", err))
+	}
+
+	env := v1.GetStringMapString("env")
+	idpentryurl := env["identity_provider_url"]
+	idpauthformsubmiturl := env["identity_provider_form_submit_url"]
+	httpProxy := env["http_proxy"]
+
+	fmt.Println()
+	fmt.Println("idpentryurl : ", idpentryurl)
+	fmt.Println("idpauthformsubmiturl : ", idpauthformsubmiturl)
+	fmt.Println("httpProxy : ", httpProxy)
+	fmt.Println()
+
 	soup.Header("User-Agent", `Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0","Accept-Encoding": "gzip, deflate, sdch`)
 
 	// Get Username and Password from cli
@@ -160,13 +179,13 @@ func main() {
 	}
 
 	fmt.Println()
-	fmt.Println()
-	fmt.Println("============ Use these to configure temporary environment variables ============")
+	fmt.Println("========================")
+	fmt.Println("Use these to configure temporary environment variables")
+	fmt.Println("========================")
 	fmt.Printf("export AWS_ACCESS_KEY_ID=\"%s\"\n", *token.Credentials.AccessKeyId)
 	fmt.Printf("export AWS_SECRET_ACCESS_KEY=\"%s\"\n", *token.Credentials.SecretAccessKey)
 	fmt.Printf("export AWS_SESSION_TOKEN=\"%s\"\n", *token.Credentials.SessionToken)
-	fmt.Println("============")
-	fmt.Println()
+	fmt.Println("========================")
 
 	// Write the AWS STS token into the AWS credential file
 	filename, _ := expand(awsconfigfile)
@@ -221,17 +240,17 @@ func main() {
 	}
 
 	// Give the user some basic info as to what has just happened
-	fmt.Println("\n\n----------------------------------------------------------------")
-	fmt.Printf("Your new access key pair has been stored in the AWS configuration file %s under the saml profile.", filename)
-	fmt.Println()
-	fmt.Printf("Note that it will expire at %s.", *token.Credentials.Expiration)
-	fmt.Println()
-	//fmt.Printf("The temporary creds are established at %s.",  *token.Credentials.Expiration  .format(token.get('ResponseMetadata').get('HTTPHeaders').get('date')))
+	fmt.Println("\n----------------------------------------------------------------")
+	fmt.Printf("Your new access key pair has been stored in the AWS configuration file %s under the saml profile.\n", filename)
+	fmt.Printf("Note that it will expire at %s.\n", *token.Credentials.Expiration)
+	fmt.Printf("The temporary creds are established at %s.\n", time.Now().UTC().String())
 	fmt.Println("After this time, you may safely rerun this script to refresh your access key pair.")
 	fmt.Println("To use this credential, call the AWS CLI with the --profile option (e.g. aws --profile saml ec2 describe-instances).")
 	fmt.Println("----------------------------------------------------------------")
 	fmt.Println()
 
+	fmt.Println("Testing...")
+	fmt.Println("----------------------------------------------------------------")
 	// Test Credentials
 	sess = session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
@@ -257,6 +276,7 @@ func main() {
 	}
 
 	fmt.Println(result)
+	fmt.Println("----------------------------------------------------------------")
 }
 
 // expand - append the User home direcroty
@@ -288,4 +308,17 @@ func getUserCredentials() (string, string) {
 	password := string(bytePassword)
 
 	return strings.TrimSpace(username), strings.TrimSpace(password)
+}
+
+// readConfig from .env file
+func readConfig(filename string, defaults map[string]interface{}) (*viper.Viper, error) {
+	v := viper.New()
+	for key, value := range defaults {
+		v.SetDefault(key, value)
+	}
+	v.SetConfigName(filename)
+	v.AddConfigPath(".")
+	v.AutomaticEnv()
+	err := v.ReadInConfig()
+	return v, err
 }
