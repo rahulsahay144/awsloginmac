@@ -6,9 +6,12 @@ awsloginmac provides a way to use federated login to AWS and store the AWS cread
 ## Generate a Binary 
 
 cd to cloned directory 
-
+```
+$ go install 
 $ go build 
+```
 
 and then 
-
+```
 $ ./awsloginmac
+```
